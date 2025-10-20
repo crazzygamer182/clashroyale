@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clash Royale Imposter Game</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.3s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .join-code-display {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .join-code {
+            font-size: 36px;
+            font-weight: bold;
+            color: #667eea;
+            letter-spacing: 5px;
+            margin-top: 10px;
+        }
+
+        .players-list {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .player-item {
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .player-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .host-badge {
+            background: #ffd700;
+            color: #333;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .card-display {
+            background: #f8f9fa;
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .card-image {
+            width: 200px;
+            height: 250px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .imposter-reveal {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .imposter-reveal h2 {
+            color: white;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .info {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Home Screen -->
+        <div id="homeScreen" class="screen active">
+            <h1>Clash Royale Imposter</h1>
+            <p class="subtitle">Find the imposter among your friends!</p>
+
+            <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
+
+            <button class="btn-primary" onclick="createRoom()">Create Room</button>
+            <button class="btn-secondary" onclick="showJoinScreen()">Join Room</button>
+
+            <div id="homeError" class="error" style="display: none;"></div>
+        </div>
+
+        <!-- Join Screen -->
+        <div id="joinScreen" class="screen">
+            <h2>Join Room</h2>
+
+            <input type="text" id="joinPlayerName" placeholder="Enter your name" maxlength="20">
+            <input type="text" id="joinCode" placeholder="Enter join code" maxlength="6"
+                style="text-transform: uppercase;">
+
+            <button class="btn-primary" onclick="joinRoom()">Join</button>
+            <button class="btn-secondary" onclick="showHomeScreen()">Back</button>
+
+            <div id="joinError" class="error" style="display: none;"></div>
+        </div>
+
+        <!-- Lobby Screen -->
+        <div id="lobbyScreen" class="screen">
+            <h2>Lobby</h2>
+
+            <div class="join-code-display">
+                <div>Join Code:</div>
+                <div class="join-code" id="displayJoinCode">------</div>
+            </div>
+
+            <div class="players-list">
+                <h3 style="margin-bottom: 15px; color: #333;">Players:</h3>
+                <div id="playersList"></div>
+            </div>
+
+            <button id="startGameBtn" class="btn-primary" onclick="startGame()" style="display: none;">Start
+                Game</button>
+            <button class="btn-secondary" onclick="leaveRoom()">Leave Room</button>
+
+            <div id="lobbyError" class="error" style="display: none;"></div>
+            <div id="lobbyInfo" class="info"></div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="screen">
+            <h2>Game Started!</h2>
+
+            <div id="gameContent"></div>
+
+            <button class="btn-secondary" onclick="leaveRoom()">Leave Game</button>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURATION - REPLACE WITH YOUR SUPABASE CREDENTIALS
+        const SUPABASE_URL = 'https://zrsqfsyzjajpsgiswdqd.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpyc3Fmc3l6amFqcHNnaXN3ZHFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4ODAyNzUsImV4cCI6MjA3NjQ1NjI3NX0.ETPyav5yz-Z-9phaJ6DWtp7sVaVPy06f7ajpIVWSiYg';
+
+        // Check if credentials are configured
+        if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
+            alert('Please configure your Supabase credentials in the index.html file!');
+        }
+
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Sample Clash Royale cards
+        const clashRoyaleCards = [
+            'Knight', 'Archers', 'Giant', 'Goblin', 'P.E.K.K.A', 'Wizard',
+            'Mini P.E.K.K.A', 'Valkyrie', 'Skeleton Army', 'Witch', 'Musketeer',
+            'Hog Rider', 'Prince', 'Baby Dragon', 'Mega Knight', 'Electro Wizard'
+        ];
+
+        // Game state
+        let currentPlayer = null;
+        let currentRoom = null;
+        let roomSubscription = null;
+        let playersSubscription = null;
+
+        // Screen navigation
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function showHomeScreen() {
+            showScreen('homeScreen');
+            clearError('joinError');
+        }
+
+        function showJoinScreen() {
+            showScreen('joinScreen');
+            clearError('homeError');
+        }
+
+        function clearError(elementId) {
+            const errorEl = document.getElementById(elementId);
+            if (errorEl) {
+                errorEl.style.display = 'none';
+                errorEl.textContent = '';
+            }
+        }
+
+        function showError(elementId, message) {
+            const errorEl = document.getElementById(elementId);
+            if (errorEl) {
+                errorEl.textContent = message;
+                errorEl.style.display = 'block';
+            }
+        }
+
+        // Generate random join code
+        function generateJoinCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let code = '';
+            for (let i = 0; i < 6; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+
+        // Create room
+        async function createRoom() {
+            const playerName = document.getElementById('playerName').value.trim();
+
+            if (!playerName) {
+                showError('homeError', 'Please enter your name');
+                return;
+            }
+
+            clearError('homeError');
+
+            try {
+                const joinCode = generateJoinCode();
+
+                // Create room
+                const { data: room, error: roomError } = await supabaseClient
+                    .from('rooms')
+                    .insert([{ join_code: joinCode, status: 'waiting' }])
+                    .select()
+                    .single();
+
+                if (roomError) throw roomError;
+
+                currentRoom = room;
+
+                // Add host as player
+                const { data: player, error: playerError } = await supabaseClient
+                    .from('players')
+                    .insert([{
+                        room_id: room.id,
+                        player_name: playerName,
+                        is_host: true
+                    }])
+                    .select()
+                    .single();
+
+                if (playerError) throw playerError;
+
+                currentPlayer = player;
+
+                // Update room with host_id
+                await supabaseClient
+                    .from('rooms')
+                    .update({ host_id: player.id })
+                    .eq('id', room.id);
+
+                enterLobby();
+            } catch (error) {
+                console.error('Error creating room:', error);
+                showError('homeError', 'Failed to create room. Please try again.');
+            }
+        }
+
+        // Join room
+        async function joinRoom() {
+            const playerName = document.getElementById('joinPlayerName').value.trim();
+            const joinCode = document.getElementById('joinCode').value.trim().toUpperCase();
+
+            if (!playerName) {
+                showError('joinError', 'Please enter your name');
+                return;
+            }
+
+            if (!joinCode) {
+                showError('joinError', 'Please enter a join code');
+                return;
+            }
+
+            clearError('joinError');
+
+            try {
+                // Find room
+                const { data: room, error: roomError } = await supabaseClient
+                    .from('rooms')
+                    .select('*')
+                    .eq('join_code', joinCode)
+                    .single();
+
+                if (roomError || !room) {
+                    showError('joinError', 'Room not found. Check your join code.');
+                    return;
+                }
+
+                if (room.status !== 'waiting') {
+                    showError('joinError', 'Game already started.');
+                    return;
+                }
+
+                currentRoom = room;
+
+                // Add player to room
+                const { data: player, error: playerError } = await supabaseClient
+                    .from('players')
+                    .insert([{
+                        room_id: room.id,
+                        player_name: playerName,
+                        is_host: false
+                    }])
+                    .select()
+                    .single();
+
+                if (playerError) throw playerError;
+
+                currentPlayer = player;
+
+                enterLobby();
+            } catch (error) {
+                console.error('Error joining room:', error);
+                showError('joinError', 'Failed to join room. Please try again.');
+            }
+        }
+
+        // Enter lobby
+        function enterLobby() {
+            showScreen('lobbyScreen');
+            document.getElementById('displayJoinCode').textContent = currentRoom.join_code;
+
+            if (currentPlayer.is_host) {
+                document.getElementById('startGameBtn').style.display = 'block';
+            }
+
+            subscribeToRoom();
+            loadPlayers();
+        }
+
+        // Subscribe to room changes
+        function subscribeToRoom() {
+            // Subscribe to room changes
+            roomSubscription = supabaseClient
+                .channel('room-changes')
+                .on('postgres_changes',
+                    { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${currentRoom.id}` },
+                    (payload) => {
+                        currentRoom = payload.new;
+                        if (currentRoom.status === 'started') {
+                            loadGameScreen();
+                        }
+                    }
+                )
+                .subscribe();
+
+            // Subscribe to players changes
+            playersSubscription = supabaseClient
+                .channel('players-changes')
+                .on('postgres_changes',
+                    { event: '*', schema: 'public', table: 'players', filter: `room_id=eq.${currentRoom.id}` },
+                    () => {
+                        loadPlayers();
+                    }
+                )
+                .subscribe();
+        }
+
+        // Load players
+        async function loadPlayers() {
+            try {
+                const { data: players, error } = await supabaseClient
+                    .from('players')
+                    .select('*')
+                    .eq('room_id', currentRoom.id)
+                    .order('joined_at', { ascending: true });
+
+                if (error) throw error;
+
+                const playersList = document.getElementById('playersList');
+                playersList.innerHTML = players.map(player => `
+                    <div class="player-item">
+                        <span>${player.player_name}</span>
+                        ${player.is_host ? '<span class="host-badge">HOST</span>' : ''}
+                    </div>
+                `).join('');
+
+                const info = `${players.length} player${players.length !== 1 ? 's' : ''} in lobby`;
+                document.getElementById('lobbyInfo').textContent = info;
+
+                // Disable start button if less than 3 players
+                const startBtn = document.getElementById('startGameBtn');
+                if (startBtn && currentPlayer.is_host) {
+                    startBtn.disabled = players.length < 3;
+                    if (players.length < 3) {
+                        document.getElementById('lobbyInfo').textContent = 'Need at least 3 players to start';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading players:', error);
+            }
+        }
+
+        // Start game
+        async function startGame() {
+            if (!currentPlayer.is_host) return;
+
+            try {
+                // Get all players
+                const { data: players, error: playersError } = await supabaseClient
+                    .from('players')
+                    .select('*')
+                    .eq('room_id', currentRoom.id);
+
+                if (playersError) throw playersError;
+
+                if (players.length < 3) {
+                    showError('lobbyError', 'Need at least 3 players to start');
+                    return;
+                }
+
+                // Select random card
+                const randomCard = clashRoyaleCards[Math.floor(Math.random() * clashRoyaleCards.length)];
+
+                // Select random imposter
+                const imposterIndex = Math.floor(Math.random() * players.length);
+
+                // Update all players
+                for (let i = 0; i < players.length; i++) {
+                    await supabaseClient
+                        .from('players')
+                        .update({ is_imposter: i === imposterIndex })
+                        .eq('id', players[i].id);
+                }
+
+                // Update room status
+                await supabaseClient
+                    .from('rooms')
+                    .update({ status: 'started', selected_card: randomCard })
+                    .eq('id', currentRoom.id);
+
+            } catch (error) {
+                console.error('Error starting game:', error);
+                showError('lobbyError', 'Failed to start game. Please try again.');
+            }
+        }
+
+        // Load game screen
+        async function loadGameScreen() {
+            try {
+                // Refresh current player data
+                const { data: player, error } = await supabaseClient
+                    .from('players')
+                    .select('*')
+                    .eq('id', currentPlayer.id)
+                    .single();
+
+                if (error) throw error;
+
+                currentPlayer = player;
+
+                const gameContent = document.getElementById('gameContent');
+
+                if (currentPlayer.is_imposter) {
+                    gameContent.innerHTML = `
+                        <div class="imposter-reveal">
+                            <h2>YOU ARE THE IMPOSTER!</h2>
+                            <p style="font-size: 18px; margin-top: 10px;">You don't have a card. Try to blend in!</p>
+                        </div>
+                        <div class="info">Discuss with others and find out who knows what card it is!</div>
+                    `;
+                } else {
+                    gameContent.innerHTML = `
+                        <div class="card-display">
+                            <h3 style="color: #333; margin-bottom: 10px;">Your Card:</h3>
+                            <div class="card-image">${currentRoom.selected_card}</div>
+                        </div>
+                        <div class="info">Remember this card and find the imposter!</div>
+                    `;
+                }
+
+                showScreen('gameScreen');
+            } catch (error) {
+                console.error('Error loading game screen:', error);
+            }
+        }
+
+        // Leave room
+        async function leaveRoom() {
+            try {
+                if (currentPlayer) {
+                    await supabaseClient
+                        .from('players')
+                        .delete()
+                        .eq('id', currentPlayer.id);
+                }
+
+                // Unsubscribe from channels
+                if (roomSubscription) {
+                    supabaseClient.removeChannel(roomSubscription);
+                }
+                if (playersSubscription) {
+                    supabaseClient.removeChannel(playersSubscription);
+                }
+
+                // If host is leaving, delete the room
+                if (currentPlayer && currentPlayer.is_host && currentRoom) {
+                    await supabaseClient
+                        .from('rooms')
+                        .delete()
+                        .eq('id', currentRoom.id);
+                }
+
+                currentPlayer = null;
+                currentRoom = null;
+                roomSubscription = null;
+                playersSubscription = null;
+
+                showHomeScreen();
+            } catch (error) {
+                console.error('Error leaving room:', error);
+            }
+        }
+
+        // Clean up on page unload
+        window.addEventListener('beforeunload', () => {
+            if (currentPlayer) {
+                navigator.sendBeacon(`${SUPABASE_URL}/rest/v1/players?id=eq.${currentPlayer.id}`, {
+                    method: 'DELETE'
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>
